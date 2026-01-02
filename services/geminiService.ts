@@ -1,9 +1,11 @@
-import { GoogleGenAI, Type, Schema } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 import { NutritionAnalysis } from "../types";
 
+// Initialize the API with the new SDK class
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-const nutritionSchema: Schema = {
+// Define schema using Type from @google/genai
+const nutritionSchema = {
   type: Type.OBJECT,
   properties: {
     totalCalories: {
@@ -42,38 +44,46 @@ const nutritionSchema: Schema = {
 };
 
 export const analyzeFoodImage = async (base64Image: string): Promise<NutritionAnalysis> => {
+  // Extract mime type if available, default to image/jpeg
+  const mimeTypeMatch = base64Image.match(/^data:(image\/\w+);base64,/);
+  const mimeType = mimeTypeMatch ? mimeTypeMatch[1] : "image/jpeg";
+
   // Remove data URL prefix if present to get just the base64 string
   const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, "");
   
   try {
+    const prompt = "Analyze this image of food. Identify the items and provide a nutritional breakdown including total calories and macros (protein, carbs, fat). Be realistic with portion sizes based on the image.";
+
+    const imagePart = {
+      inlineData: {
+        data: base64Data,
+        mimeType: mimeType,
+      },
+    };
+
+    const textPart = {
+      text: prompt
+    };
+
+    // Use the recommended model for multimodal tasks
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: {
-        parts: [
-          {
-            inlineData: {
-              mimeType: "image/jpeg",
-              data: base64Data,
-            },
-          },
-          {
-            text: "Analyze this image of food. Identify the items and provide a nutritional breakdown including total calories and macros (protein, carbs, fat). Be realistic with portion sizes based on the image.",
-          },
-        ],
+        parts: [textPart, imagePart]
       },
       config: {
         responseMimeType: "application/json",
         responseSchema: nutritionSchema,
-        systemInstruction: "You are an expert nutritionist. Analyze food images accurately. If the image is not food, return 0 for all values and a summary stating that no food was detected.",
       },
     });
 
-    const jsonText = response.text;
-    if (!jsonText) {
+    const text = response.text;
+
+    if (!text) {
       throw new Error("No response received from Gemini.");
     }
 
-    const data = JSON.parse(jsonText) as NutritionAnalysis;
+    const data = JSON.parse(text) as NutritionAnalysis;
     return data;
 
   } catch (error) {
