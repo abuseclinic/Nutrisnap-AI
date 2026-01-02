@@ -104,11 +104,11 @@ const App: React.FC = () => {
     startAnalysis(capturedImage);
   };
 
-  const startAnalysis = async (image: string) => {
+  const startAnalysis = async (image: string, isEnhanced: boolean = false) => {
     setState(AppState.ANALYZING);
     setErrorMsg('');
     try {
-      const result = await analyzeFoodImage(image);
+      const result = await analyzeFoodImage(image, isEnhanced);
       setAnalysis(result);
       setState(AppState.RESULTS);
       setIsItemsExpanded(false); // Reset expansion on new analysis
@@ -584,11 +584,20 @@ const App: React.FC = () => {
               ) : (
                 <>
                   <button 
-                    onClick={() => imageSrc && startAnalysis(imageSrc)}
+                    onClick={() => imageSrc && startAnalysis(imageSrc, false)}
                     className="p-2 bg-black/30 backdrop-blur-md rounded-full text-white hover:bg-black/40 transition-colors border border-white/20"
                     title="Re-analyze"
                   >
                     <RefreshCw size={20} />
+                  </button>
+                  
+                  {/* Enhanced Analysis Button */}
+                  <button 
+                    onClick={() => imageSrc && startAnalysis(imageSrc, true)}
+                    className="p-2 bg-purple-600/80 backdrop-blur-md rounded-full text-white hover:bg-purple-700/80 transition-colors border border-white/20 shadow-[0_0_15px_rgba(168,85,247,0.5)]"
+                    title="Deep Analysis (Enhanced)"
+                  >
+                    <Sparkles size={20} />
                   </button>
 
                   <button 
@@ -895,7 +904,7 @@ const App: React.FC = () => {
     </div>
   );
 
-  // --- Main Render ---
+  // --- Modals ---
 
   return (
     <div className="w-full h-full bg-white dark:bg-gray-950 relative overflow-hidden flex flex-col transition-colors">

@@ -15,9 +15,10 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     define: {
-      // Define process.env.VITE_API_KEY globally for the browser
-      // This allows usages of process.env.VITE_API_KEY in client code
+      // Define global environment variables for the browser
+      // This allows usages of process.env.VITE_API_KEY and process.env.API_KEY in client code
       'process.env.VITE_API_KEY': JSON.stringify(env.VITE_API_KEY || env.API_KEY),
+      'process.env.API_KEY': JSON.stringify(env.API_KEY || env.VITE_API_KEY),
     },
     build: {
       outDir: 'dist',

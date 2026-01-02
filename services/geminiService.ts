@@ -1,83 +1,74 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 import { NutritionAnalysis } from "../types";
 
-// Define schema using Type from @google/genai
-const nutritionSchema = {
-  type: Type.OBJECT,
-  properties: {
-    totalCalories: {
-      type: Type.NUMBER,
-      description: "The total estimated calories in the meal.",
-    },
-    macros: {
-      type: Type.OBJECT,
-      properties: {
-        protein: { type: Type.NUMBER, description: "Total protein in grams." },
-        carbs: { type: Type.NUMBER, description: "Total carbohydrates in grams." },
-        fat: { type: Type.NUMBER, description: "Total fat in grams." },
-      },
-      required: ["protein", "carbs", "fat"],
-    },
-    foodItems: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          name: { type: Type.STRING, description: "Name of the food item." },
-          approxCalories: { type: Type.NUMBER, description: "Approximate calories for this item." },
-          protein: { type: Type.NUMBER, description: "Protein in grams for this item." },
-          carbs: { type: Type.NUMBER, description: "Carbohydrates in grams for this item." },
-          fat: { type: Type.NUMBER, description: "Fat in grams for this item." },
-        },
-        required: ["name", "approxCalories", "protein", "carbs", "fat"],
-      },
-    },
-    summary: {
-      type: Type.STRING,
-      description: "A short, friendly summary of the meal's nutritional value (1-2 sentences).",
-    },
-  },
-  required: ["totalCalories", "macros", "foodItems", "summary"],
-};
-
-export const analyzeFoodImage = async (base64Image: string): Promise<NutritionAnalysis> => {
-  // Retrieve API Key exclusively from process.env.VITE_API_KEY
-  const apiKey = process.env.VITE_API_KEY;
+export const analyzeFoodImage = async (base64Image: string, isEnhanced: boolean = false): Promise<NutritionAnalysis> => {
+  // Retrieve API Key: Prioritize process.env.API_KEY (standard) but fallback to VITE_API_KEY
+  const apiKey = process.env.API_KEY || process.env.VITE_API_KEY;
 
   if (!apiKey) {
-    throw new Error("API Key is missing. Please ensure VITE_API_KEY is set in your environment.");
+    throw new Error("API Key is missing. Please ensure API_KEY or VITE_API_KEY is set in your environment.");
   }
 
-  // Initialize the API client with the key
-  const ai = new GoogleGenAI({ apiKey });
+  // Initialize the API client with the key using the new SDK
+  const ai = new GoogleGenAI({ apiKey: apiKey });
 
   // Extract mime type if available, default to image/jpeg
   const mimeTypeMatch = base64Image.match(/^data:(image\/\w+);base64,/);
   const mimeType = mimeTypeMatch ? mimeTypeMatch[1] : "image/jpeg";
 
   // Remove data URL prefix if present to get just the base64 string
-  const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, "");
+  // Also remove any whitespace (newlines) that might have crept in
+  const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, "").replace(/\s/g, "");
 
   try {
-    const prompt = "Analyze this image of food. Identify the items and provide a nutritional breakdown including total calories and macros (protein, carbs, fat). Be realistic with portion sizes based on the image.";
+    const schemaDescription = `
+      Return a JSON object with the following structure:
+      {
+        "totalCalories": number,
+        "macros": {
+          "protein": number (grams),
+          "carbs": number (grams),
+          "fat": number (grams)
+        },
+        "foodItems": [
+          {
+            "name": string,
+            "approxCalories": number,
+            "protein": number,
+            "carbs": number,
+            "fat": number
+          }
+        ],
+        "summary": string (1-2 sentences)
+      }
+      Ensure all numeric values are numbers, not strings.
+    `;
 
+    let promptText = `Analyze this image of food. Identify the items and provide a nutritional breakdown. ${schemaDescription} Be realistic with portion sizes based on the image.`;
+
+    if (isEnhanced) {
+      promptText = `Conduct a deep, meticulous nutritional analysis of this food image. Break down complex dishes into individual ingredients, carefully estimating portion sizes and hidden calories (oils, sauces, dressings). ${schemaDescription} Provide a precise calculation of total calories and macros.`;
+    }
+
+    // Using gemini-2.0-flash-exp as it is a stable multimodal model available in the free tier
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: 'gemini-2.0-flash-exp',
       contents: {
         parts: [
-          { text: prompt },
           {
             inlineData: {
               mimeType: mimeType,
-              data: base64Data,
-            },
+              data: base64Data
+            }
           },
-        ],
+          {
+            text: promptText
+          }
+        ]
       },
       config: {
-        responseMimeType: "application/json",
-        responseSchema: nutritionSchema,
-      },
+        responseMimeType: 'application/json',
+      }
     });
 
     const text = response.text;
@@ -86,7 +77,9 @@ export const analyzeFoodImage = async (base64Image: string): Promise<NutritionAn
       throw new Error("No response received from Gemini.");
     }
 
-    const data = JSON.parse(text) as NutritionAnalysis;
+    // Clean up potential markdown code blocks if the model adds them despite MIME type
+    const jsonString = text.replace(/```json\n|\n```/g, "").trim();
+    const data = JSON.parse(jsonString) as NutritionAnalysis;
     return data;
 
   } catch (error: any) {
