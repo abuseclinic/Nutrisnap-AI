@@ -52,24 +52,20 @@ export const analyzeFoodImage = async (base64Image: string): Promise<NutritionAn
   const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, "");
   
   try {
-    const prompt = "Analyze this image of food. Identify the items and provide a nutritional breakdown including total calories and macros (protein, carbs, fat). Be realistic with portion sizes based on the image.";
-
-    const imagePart = {
-      inlineData: {
-        data: base64Data,
-        mimeType: mimeType,
-      },
-    };
-
-    const textPart = {
-      text: prompt
-    };
-
-    // Use the recommended model for multimodal tasks
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: {
-        parts: [textPart, imagePart]
+        parts: [
+          {
+            text: "Analyze this image of food. Identify the items and provide a nutritional breakdown including total calories and macros (protein, carbs, fat). Be realistic with portion sizes based on the image."
+          },
+          {
+            inlineData: {
+              data: base64Data,
+              mimeType: mimeType,
+            },
+          }
+        ]
       },
       config: {
         responseMimeType: "application/json",
