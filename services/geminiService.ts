@@ -3,7 +3,7 @@ import { NutritionAnalysis } from "../types";
 
 // Initialize the API with the new SDK class
 // The API key must be obtained exclusively from process.env.API_KEY
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY;
 
 // Define schema using Type from @google/genai
 const nutritionSchema = {
