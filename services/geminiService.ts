@@ -1,7 +1,7 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NutritionAnalysis } from "../types";
 
-// Initialize the API with the new SDK class
+// Initialize the API with the standard SDK class
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 // Define schema using Type from @google/genai
@@ -52,20 +52,20 @@ export const analyzeFoodImage = async (base64Image: string): Promise<NutritionAn
   const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, "");
   
   try {
+    const prompt = "Analyze this image of food. Identify the items and provide a nutritional breakdown including total calories and macros (protein, carbs, fat). Be realistic with portion sizes based on the image.";
+
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: {
         parts: [
-          {
-            text: "Analyze this image of food. Identify the items and provide a nutritional breakdown including total calories and macros (protein, carbs, fat). Be realistic with portion sizes based on the image."
-          },
+          { text: prompt },
           {
             inlineData: {
-              data: base64Data,
               mimeType: mimeType,
+              data: base64Data,
             },
-          }
-        ]
+          },
+        ],
       },
       config: {
         responseMimeType: "application/json",
