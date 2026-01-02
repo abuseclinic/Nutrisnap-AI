@@ -1,11 +1,13 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { NutritionAnalysis } from "../types";
 
-// Initialize the API with the new SDK class
-// The API key must be obtained exclusively from process.env.API_KEY
-const apiKey = (process.env.NEXT_PUBLIC_GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || "") as string;
+// Access the environment variable using Vite's syntax (import.meta.env)
+const apiKey = import.meta.env.VITE_GEMINI_KEY;
 
-// Define schema using Type from @google/genai
+// Initialize the Google GenAI client instance
+const ai = new GoogleGenAI(apiKey);
+
+// Define the structured output schema
 const nutritionSchema = {
   type: Type.OBJECT,
   properties: {
@@ -45,39 +47,38 @@ const nutritionSchema = {
 };
 
 export const analyzeFoodImage = async (base64Image: string): Promise<NutritionAnalysis> => {
-  // Extract mime type if available, default to image/jpeg
+  // Determine MIME type (default to image/jpeg)
   const mimeTypeMatch = base64Image.match(/^data:(image\/\w+);base64,/);
   const mimeType = mimeTypeMatch ? mimeTypeMatch[1] : "image/jpeg";
 
-  // Remove data URL prefix if present to get just the base64 string
+  // Remove the data URL prefix to get raw base64 string
   const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, "");
-  
+
   try {
-    // Use gemini-3-flash-preview as recommended for basic tasks and multimodal capability
     const prompt = "Analyze this image of food. Identify the items and provide a nutritional breakdown including total calories and macros (protein, carbs, fat). Be realistic with portion sizes based on the image.";
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: {
-        parts: [
-          {
-            inlineData: {
-              data: base64Data,
-              mimeType: mimeType,
-            },
-          },
-          {
-            text: prompt,
-          },
-        ]
-      },
-      config: {
+    // Initialize the model with the correct version and configuration
+    const model = ai.getGenerativeModel({
+      model: "gemini-1.5-flash",
+      generationConfig: {
         responseMimeType: "application/json",
         responseSchema: nutritionSchema,
       },
     });
 
-    const text = response.text;
+    // Generate content using the prompt and the base64 image
+    const result = await model.generateContent([
+      prompt,
+      {
+        inlineData: {
+          data: base64Data,
+          mimeType: mimeType,
+        },
+      },
+    ]);
+
+    const response = result.response;
+    const text = response.text();
 
     if (!text) {
       throw new Error("No response received from Gemini.");
