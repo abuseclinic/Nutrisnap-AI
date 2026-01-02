@@ -1,24 +1,19 @@
 import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { NutritionAnalysis } from "../types";
 
-// Initialize the API with the standard SDK class
-// Note: In @google/generative-ai, the constructor takes the API key string directly or valid configuration.
-const genAI = new GoogleGenerativeAI(process.env.API_KEY as string);
+// Gunakan VITE_ prefix agar terbaca oleh Vite di Vercel
+const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY || "");
 
-// Define schema using SchemaType from @google/generative-ai
 const nutritionSchema = {
   type: SchemaType.OBJECT,
   properties: {
-    totalCalories: {
-      type: SchemaType.NUMBER,
-      description: "The total estimated calories in the meal.",
-    },
+    totalCalories: { type: SchemaType.NUMBER },
     macros: {
       type: SchemaType.OBJECT,
       properties: {
-        protein: { type: SchemaType.NUMBER, description: "Total protein in grams." },
-        carbs: { type: SchemaType.NUMBER, description: "Total carbohydrates in grams." },
-        fat: { type: SchemaType.NUMBER, description: "Total fat in grams." },
+        protein: { type: SchemaType.NUMBER },
+        carbs: { type: SchemaType.NUMBER },
+        fat: { type: SchemaType.NUMBER },
       },
       required: ["protein", "carbs", "fat"],
     },
@@ -27,32 +22,25 @@ const nutritionSchema = {
       items: {
         type: SchemaType.OBJECT,
         properties: {
-          name: { type: SchemaType.STRING, description: "Name of the food item." },
-          approxCalories: { type: SchemaType.NUMBER, description: "Approximate calories for this item." },
-          protein: { type: SchemaType.NUMBER, description: "Protein in grams for this item." },
-          carbs: { type: SchemaType.NUMBER, description: "Carbohydrates in grams for this item." },
-          fat: { type: SchemaType.NUMBER, description: "Fat in grams for this item." },
+          name: { type: SchemaType.STRING },
+          approxCalories: { type: SchemaType.NUMBER },
+          protein: { type: SchemaType.NUMBER },
+          carbs: { type: SchemaType.NUMBER },
+          fat: { type: SchemaType.NUMBER },
         },
-        required: ["name", "approxCalories", "protein", "carbs", "fat"],
+        required: ["name", "approxCalories"],
       },
     },
-    summary: {
-      type: SchemaType.STRING,
-      description: "A short, friendly summary of the meal's nutritional value (1-2 sentences).",
-    },
+    summary: { type: SchemaType.STRING },
   },
   required: ["totalCalories", "macros", "foodItems", "summary"],
 };
 
 export const analyzeFoodImage = async (base64Image: string): Promise<NutritionAnalysis> => {
-  // Extract mime type if available, default to image/jpeg
-  const mimeTypeMatch = base64Image.match(/^data:(image\/\w+);base64,/);
-  const mimeType = mimeTypeMatch ? mimeTypeMatch[1] : "image/jpeg";
-
-  // Remove data URL prefix if present to get just the base64 string
   const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, "");
   
   try {
+    // Gunakan model gemini-1.5-flash
     const model = genAI.getGenerativeModel({
       model: "gemini-1.5-flash",
       generationConfig: {
@@ -61,30 +49,15 @@ export const analyzeFoodImage = async (base64Image: string): Promise<NutritionAn
       },
     });
 
-    const prompt = "Analyze this image of food. Identify the items and provide a nutritional breakdown including total calories and macros (protein, carbs, fat). Be realistic with portion sizes based on the image.";
-
     const result = await model.generateContent([
-      prompt,
-      {
-        inlineData: {
-          data: base64Data,
-          mimeType: mimeType,
-        },
-      },
+      "Analyze this food image and provide nutrition data in JSON.",
+      { inlineData: { data: base64Data, mimeType: "image/jpeg" } },
     ]);
 
     const response = await result.response;
-    const text = response.text();
-
-    if (!text) {
-      throw new Error("No response received from Gemini.");
-    }
-
-    const data = JSON.parse(text) as NutritionAnalysis;
-    return data;
-
+    return JSON.parse(response.text()) as NutritionAnalysis;
   } catch (error) {
-    console.error("Error analyzing image:", error);
+    console.error("Analysis Error:", error);
     throw error;
   }
 };
