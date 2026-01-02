@@ -1,0 +1,7 @@
+{
+  "name": "NutriSnap AI",
+  "description": "Instantly analyze your meal's nutritional value by snapping a photo. Get a breakdown of calories and macros powered by Gemini.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
