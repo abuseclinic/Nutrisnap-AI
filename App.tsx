@@ -112,9 +112,10 @@ const App: React.FC = () => {
       setAnalysis(result);
       setState(AppState.RESULTS);
       setIsItemsExpanded(false); // Reset expansion on new analysis
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setErrorMsg("Failed to analyze image. Please try again with a clearer photo.");
+      // Display the actual error message if available
+      setErrorMsg(err.message || "Failed to analyze image. Please try again with a clearer photo.");
       setState(AppState.ERROR);
     }
   };

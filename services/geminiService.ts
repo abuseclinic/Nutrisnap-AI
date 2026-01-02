@@ -1,15 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { NutritionAnalysis } from "../types";
 
-// Check for API key availability
-const apiKey = process.env.API_KEY;
-if (!apiKey) {
-  console.error("API_KEY is missing. Please ensure it is set in your environment variables.");
-}
-
-// Initialize the API with the new SDK class
-const ai = new GoogleGenAI({ apiKey: apiKey || "" });
-
 // Define schema using Type from @google/genai
 const nutritionSchema = {
   type: Type.OBJECT,
@@ -50,9 +41,17 @@ const nutritionSchema = {
 };
 
 export const analyzeFoodImage = async (base64Image: string): Promise<NutritionAnalysis> => {
-  if (!apiKey) {
-    throw new Error("API Key is missing. Please check your app configuration.");
+  // Retrieve API Key from environment variables
+  // Ensure your build process (e.g. Vite) replaces process.env.API_KEY with the actual key
+  const apiKey = process.env.API_KEY;
+
+  if (!apiKey || apiKey === "undefined" || apiKey.includes("your_api_key_here")) {
+    console.error("API Key check failed. Value:", apiKey);
+    throw new Error("API Key is missing or invalid. Please check your Vercel environment variables.");
   }
+
+  // Initialize the API client with the key
+  const ai = new GoogleGenAI({ apiKey });
 
   // Extract mime type if available, default to image/jpeg
   const mimeTypeMatch = base64Image.match(/^data:(image\/\w+);base64,/);
@@ -62,11 +61,11 @@ export const analyzeFoodImage = async (base64Image: string): Promise<NutritionAn
   const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, "");
   
   try {
-    // Use gemini-2.5-flash-latest for robust multimodal analysis
     const prompt = "Analyze this image of food. Identify the items and provide a nutritional breakdown including total calories and macros (protein, carbs, fat). Be realistic with portion sizes based on the image.";
 
+    // Using gemini-2.0-flash for high performance and multimodal capabilities
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-latest",
+      model: "gemini-2.0-flash",
       contents: {
         parts: [
           {
@@ -83,8 +82,6 @@ export const analyzeFoodImage = async (base64Image: string): Promise<NutritionAn
       config: {
         responseMimeType: "application/json",
         responseSchema: nutritionSchema,
-        // Optional: reduce safety settings to avoid false positives on food images
-        // safetySettings: [ ... ] 
       },
     });
 
@@ -97,8 +94,9 @@ export const analyzeFoodImage = async (base64Image: string): Promise<NutritionAn
     const data = JSON.parse(text) as NutritionAnalysis;
     return data;
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error analyzing image:", error);
-    throw error;
+    // Propagate the specific error message to the UI
+    throw new Error(error.message || "Failed to analyze image with AI.");
   }
 };
