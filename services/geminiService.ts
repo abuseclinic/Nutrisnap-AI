@@ -3,7 +3,7 @@ import { NutritionAnalysis } from "../types";
 
 // Initialize the API with the new SDK class
 // The API key must be obtained exclusively from process.env.API_KEY
-const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || "";
+const apiKey = (process.env.NEXT_PUBLIC_GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || "") as string;
 
 // Define schema using Type from @google/genai
 const nutritionSchema = {
