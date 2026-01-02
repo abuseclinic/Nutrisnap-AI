@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Camera as CameraIcon, X, RefreshCw, Zap } from 'lucide-react';
+import { X } from 'lucide-react';
 
 interface CameraProps {
   onCapture: (imageSrc: string) => void;

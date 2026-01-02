@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Camera, Upload, ChevronRight, ChevronDown, Leaf, Utensils, Award, Info, RefreshCw, Pencil, Check, X, ArrowLeft, Share2, PlusCircle, Droplets, Weight, Minus, Plus, User, Calendar, Ruler, Trash2, Sparkles } from 'lucide-react';
+import { ChevronRight, ChevronDown, Utensils, Award, Info, RefreshCw, Pencil, Check, X, ArrowLeft, Share2, PlusCircle, Droplets, Weight, Minus, Plus, User, Calendar, Trash2, Sparkles } from 'lucide-react';
 import { AppState, NutritionAnalysis, MacroNutrients, MealEntry, FoodItem } from './types';
 import { analyzeFoodImage } from './services/geminiService';
 import NutritionChart from './components/NutritionChart';
