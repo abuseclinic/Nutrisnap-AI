@@ -610,12 +610,12 @@ const App: React.FC = () => {
           {/* Big Calorie Display */}
           <div className="absolute bottom-4 left-4 right-4 text-white z-30">
             {isEditing ? (
-               <div className="flex items-end gap-2">
+               <div className="flex items-end gap-2 bg-black/40 backdrop-blur-sm p-3 rounded-xl border border-white/10 w-fit">
                  <input
                     type="number"
                     value={displayData.totalCalories}
                     onChange={(e) => handleEditChange('totalCalories', e.target.value)}
-                    className="w-32 bg-black/40 border-b-2 border-primary text-3xl font-bold text-white outline-none px-1"
+                    className="w-32 bg-transparent border-b-2 border-primary text-3xl font-bold text-white outline-none px-1"
                  />
                  <span className="mb-2 text-sm font-medium opacity-90">kcal</span>
                </div>
@@ -629,10 +629,22 @@ const App: React.FC = () => {
         </div>
 
         {/* Right Panel: Scrollable Content */}
-        <div className="flex-1 overflow-y-auto no-scrollbar relative z-30 bg-gray-50 md:bg-white dark:bg-gray-950 flex flex-col">
-          <div className="p-6 md:p-8 space-y-6 -mt-4 md:mt-0 bg-gray-50 md:bg-white dark:bg-gray-950 rounded-t-3xl md:rounded-none flex-1 transition-colors">
+        <div className={`flex-1 overflow-y-auto no-scrollbar relative z-30 flex flex-col ${isEditing ? 'bg-amber-50/30 dark:bg-amber-900/5' : 'bg-gray-50 md:bg-white dark:bg-gray-950'}`}>
           
-             {/* Action Button: Log Meal */}
+          {/* Editing Banner - Sticky Header */}
+          {isEditing && (
+            <div className="sticky top-0 z-40 bg-amber-50/95 dark:bg-gray-900/95 backdrop-blur-md border-b border-amber-200 dark:border-amber-900/50 px-6 py-3 flex items-center justify-between shadow-sm animate-in slide-in-from-top-2">
+              <div className="flex items-center gap-2 text-amber-700 dark:text-amber-500">
+                <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div>
+                <span className="font-semibold text-sm">Editing Mode</span>
+              </div>
+              <span className="text-xs text-amber-600/70 dark:text-amber-500/70 hidden sm:block">Tap fields to modify</span>
+            </div>
+          )}
+
+          <div className={`p-6 md:p-8 space-y-6 -mt-4 md:mt-0 ${isEditing ? 'bg-transparent' : 'bg-gray-50 md:bg-white dark:bg-gray-950'} rounded-t-3xl md:rounded-none flex-1 transition-colors`}>
+          
+             {/* Action Button: Log Meal - only show when NOT editing */}
              {!isEditing && (
                <button 
                  onClick={addToLog}
@@ -644,14 +656,14 @@ const App: React.FC = () => {
              )}
 
             {/* Summary Card */}
-            <div className="bg-white dark:bg-gray-900 p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800">
+            <div className={`bg-white dark:bg-gray-900 p-5 rounded-2xl shadow-sm border transition-all ${isEditing ? 'border-amber-300 dark:border-amber-700 ring-4 ring-amber-50 dark:ring-amber-900/10' : 'border-gray-100 dark:border-gray-800'}`}>
               <div className="flex items-start gap-3 w-full">
-                <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                <Info className={`w-5 h-5 flex-shrink-0 mt-0.5 ${isEditing ? 'text-amber-500' : 'text-primary'}`} />
                 {isEditing ? (
                   <textarea
                     value={displayData.summary}
                     onChange={(e) => setEditForm({...editForm!, summary: e.target.value})}
-                    className="w-full text-sm text-gray-600 dark:text-gray-300 bg-transparent border border-gray-200 dark:border-gray-700 rounded-lg p-3 focus:ring-2 focus:ring-primary/20 outline-none resize-none"
+                    className="w-full text-sm text-gray-800 dark:text-gray-200 bg-amber-50/50 dark:bg-black/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 focus:ring-2 focus:ring-amber-500/40 outline-none resize-none"
                     rows={3}
                   />
                 ) : (
@@ -663,9 +675,9 @@ const App: React.FC = () => {
             </div>
 
             {/* Macros Chart */}
-            <div className="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 transition-colors">
+            <div className={`bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-sm border transition-all ${isEditing ? 'border-amber-300 dark:border-amber-700 ring-4 ring-amber-50 dark:ring-amber-900/10' : 'border-gray-100 dark:border-gray-800'}`}>
               <h3 className="font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
-                <Award className="w-5 h-5 text-orange-500" />
+                <Award className={`w-5 h-5 ${isEditing ? 'text-amber-500' : 'text-orange-500'}`} />
                 Macro Breakdown
               </h3>
               
@@ -673,13 +685,13 @@ const App: React.FC = () => {
               
               <div className="grid grid-cols-3 gap-4 mt-6">
                 {/* Carbs */}
-                <div className={`text-center p-3 rounded-xl transition-all ${isEditing ? 'bg-blue-100 dark:bg-blue-900/40 ring-2 ring-blue-500/20' : 'bg-blue-50 dark:bg-blue-900/20'}`}>
+                <div className={`text-center p-3 rounded-xl transition-all ${isEditing ? 'bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-500/20 hover:ring-blue-500/50 cursor-text' : 'bg-blue-50 dark:bg-blue-900/20'}`}>
                   {isEditing ? (
                      <input
                       type="number"
                       value={displayData.macros.carbs}
                       onChange={(e) => handleEditChange('macros', e.target.value, 'carbs')}
-                      className="w-full bg-transparent text-center text-blue-600 dark:text-blue-400 font-bold text-lg outline-none border-b border-blue-300"
+                      className="w-full bg-transparent text-center text-blue-700 dark:text-blue-300 font-bold text-lg outline-none border-b border-blue-300/50 focus:border-blue-500"
                    />
                   ) : (
                     <div className="text-blue-600 dark:text-blue-400 font-bold text-lg">{displayData.macros.carbs}g</div>
@@ -688,13 +700,13 @@ const App: React.FC = () => {
                 </div>
 
                 {/* Protein */}
-                <div className={`text-center p-3 rounded-xl transition-all ${isEditing ? 'bg-green-100 dark:bg-green-900/40 ring-2 ring-green-500/20' : 'bg-green-50 dark:bg-green-900/20'}`}>
+                <div className={`text-center p-3 rounded-xl transition-all ${isEditing ? 'bg-green-50 dark:bg-green-900/20 ring-2 ring-green-500/20 hover:ring-green-500/50 cursor-text' : 'bg-green-50 dark:bg-green-900/20'}`}>
                    {isEditing ? (
                      <input
                       type="number"
                       value={displayData.macros.protein}
                       onChange={(e) => handleEditChange('macros', e.target.value, 'protein')}
-                      className="w-full bg-transparent text-center text-green-600 dark:text-green-400 font-bold text-lg outline-none border-b border-green-300"
+                      className="w-full bg-transparent text-center text-green-700 dark:text-green-300 font-bold text-lg outline-none border-b border-green-300/50 focus:border-green-500"
                    />
                   ) : (
                     <div className="text-green-600 dark:text-green-400 font-bold text-lg">{displayData.macros.protein}g</div>
@@ -703,13 +715,13 @@ const App: React.FC = () => {
                 </div>
 
                 {/* Fat */}
-                <div className={`text-center p-3 rounded-xl transition-all ${isEditing ? 'bg-orange-100 dark:bg-orange-900/40 ring-2 ring-orange-500/20' : 'bg-orange-50 dark:bg-orange-900/20'}`}>
+                <div className={`text-center p-3 rounded-xl transition-all ${isEditing ? 'bg-orange-50 dark:bg-orange-900/20 ring-2 ring-orange-500/20 hover:ring-orange-500/50 cursor-text' : 'bg-orange-50 dark:bg-orange-900/20'}`}>
                    {isEditing ? (
                      <input
                       type="number"
                       value={displayData.macros.fat}
                       onChange={(e) => handleEditChange('macros', e.target.value, 'fat')}
-                      className="w-full bg-transparent text-center text-orange-600 dark:text-orange-400 font-bold text-lg outline-none border-b border-orange-300"
+                      className="w-full bg-transparent text-center text-orange-700 dark:text-orange-300 font-bold text-lg outline-none border-b border-orange-300/50 focus:border-orange-500"
                    />
                   ) : (
                     <div className="text-orange-600 dark:text-orange-400 font-bold text-lg">{displayData.macros.fat}g</div>
@@ -721,13 +733,13 @@ const App: React.FC = () => {
 
             {/* Food Items List - Expandable */}
             {(displayData.foodItems.length > 0 || isEditing) && (
-              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 mb-8 overflow-hidden transition-all">
+              <div className={`bg-white dark:bg-gray-900 rounded-2xl shadow-sm border transition-all mb-8 overflow-hidden ${isEditing ? 'border-amber-300 dark:border-amber-700 ring-4 ring-amber-50 dark:ring-amber-900/10' : 'border-gray-100 dark:border-gray-800'}`}>
                 <button 
                   onClick={() => setIsItemsExpanded(!isItemsExpanded)}
                   className="w-full p-6 flex justify-between items-center bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                 >
                   <div className="flex items-center gap-2">
-                    <Utensils className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                    <Utensils className={`w-5 h-5 ${isEditing ? 'text-amber-500' : 'text-gray-500 dark:text-gray-400'}`} />
                     <h3 className="font-semibold text-gray-800 dark:text-gray-200">Detected Items</h3>
                   </div>
                   {isItemsExpanded ? (
@@ -741,13 +753,13 @@ const App: React.FC = () => {
                   {displayData.foodItems.map((item, idx) => (
                     <div key={idx} className="py-3 border-b border-gray-50 dark:border-gray-800 last:border-0">
                       {isEditing ? (
-                        <div className="space-y-3 bg-gray-50/50 dark:bg-gray-800/50 p-3 rounded-xl border border-gray-100 dark:border-gray-700">
+                        <div className="space-y-3 bg-gray-50/80 dark:bg-gray-800/80 p-3 rounded-xl border border-gray-200 dark:border-gray-700">
                           <div className="flex items-center justify-between gap-2">
                              <input 
                                type="text"
                                value={item.name}
                                onChange={(e) => handleFoodItemChange(idx, 'name', e.target.value)}
-                               className="flex-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20 dark:text-white"
+                               className="flex-1 bg-white dark:bg-black border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20 dark:text-white"
                                placeholder="Item name"
                              />
                              <button 
@@ -764,7 +776,7 @@ const App: React.FC = () => {
                                  type="number"
                                  value={item.approxCalories}
                                  onChange={(e) => handleFoodItemChange(idx, 'approxCalories', e.target.value)}
-                                 className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg pl-3 pr-8 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-primary/20 dark:text-white"
+                                 className="w-full bg-white dark:bg-black border border-gray-200 dark:border-gray-600 rounded-lg pl-3 pr-8 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-primary/20 dark:text-white"
                                />
                                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-medium">kcal</span>
                              </div>
@@ -776,7 +788,7 @@ const App: React.FC = () => {
                                     type="number"
                                     value={item.carbs}
                                     onChange={(e) => handleFoodItemChange(idx, 'carbs', e.target.value)}
-                                    className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-blue-600 dark:text-blue-400 rounded-lg px-2 py-1 text-xs font-bold text-center outline-none focus:border-blue-300"
+                                    className="w-full bg-white dark:bg-black border border-gray-200 dark:border-gray-600 text-blue-600 dark:text-blue-400 rounded-lg px-2 py-1 text-xs font-bold text-center outline-none focus:border-blue-300"
                                   />
                                   <span className="text-[9px] text-gray-400 absolute -bottom-4 left-0 w-full text-center">Carbs</span>
                                </div>
@@ -785,7 +797,7 @@ const App: React.FC = () => {
                                     type="number"
                                     value={item.protein}
                                     onChange={(e) => handleFoodItemChange(idx, 'protein', e.target.value)}
-                                    className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-green-600 dark:text-green-400 rounded-lg px-2 py-1 text-xs font-bold text-center outline-none focus:border-green-300"
+                                    className="w-full bg-white dark:bg-black border border-gray-200 dark:border-gray-600 text-green-600 dark:text-green-400 rounded-lg px-2 py-1 text-xs font-bold text-center outline-none focus:border-green-300"
                                   />
                                   <span className="text-[9px] text-gray-400 absolute -bottom-4 left-0 w-full text-center">Prot</span>
                                </div>
@@ -794,7 +806,7 @@ const App: React.FC = () => {
                                     type="number"
                                     value={item.fat}
                                     onChange={(e) => handleFoodItemChange(idx, 'fat', e.target.value)}
-                                    className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-orange-600 dark:text-orange-400 rounded-lg px-2 py-1 text-xs font-bold text-center outline-none focus:border-orange-300"
+                                    className="w-full bg-white dark:bg-black border border-gray-200 dark:border-gray-600 text-orange-600 dark:text-orange-400 rounded-lg px-2 py-1 text-xs font-bold text-center outline-none focus:border-orange-300"
                                   />
                                   <span className="text-[9px] text-gray-400 absolute -bottom-4 left-0 w-full text-center">Fat</span>
                                </div>
@@ -832,7 +844,7 @@ const App: React.FC = () => {
                   {isEditing && (
                     <button 
                       onClick={addFoodItem}
-                      className="w-full py-3 mt-2 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-gray-500 dark:text-gray-400 font-medium text-sm flex items-center justify-center gap-2 hover:border-primary hover:text-primary transition-colors"
+                      className="w-full py-3 mt-2 border-2 border-dashed border-amber-300/50 dark:border-amber-700/50 rounded-xl text-amber-600 dark:text-amber-400 font-medium text-sm flex items-center justify-center gap-2 hover:bg-amber-50 dark:hover:bg-amber-900/10 transition-colors"
                     >
                       <PlusCircle size={16} />
                       Add Item

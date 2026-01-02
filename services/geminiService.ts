@@ -1,49 +1,42 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { NutritionAnalysis } from "../types";
 
-// PASTIKAN NAMA VARIABEL INI SAMA PERSIS DENGAN DI VERCEL / .ENV
-const apiKey = import.meta.env.VITE_GEMINI_KEY;
+// Initialize the API with the installed SDK class
+const genAI = new GoogleGenerativeAI(process.env.API_KEY as string);
 
-// Cek jika API Key kosong (untuk debugging)
-if (!apiKey) {
-  console.error("CRITICAL: API Key is missing! Check your environment variable.");
-}
-
-const ai = new GoogleGenAI(apiKey);
-
-// Schema menggunakan String biasa agar aman dari error import
+// Define schema using SchemaType from @google/generative-ai
 const nutritionSchema = {
-  type: "object",
+  type: SchemaType.OBJECT,
   properties: {
     totalCalories: {
-      type: "number",
+      type: SchemaType.NUMBER,
       description: "The total estimated calories in the meal.",
     },
     macros: {
-      type: "object",
+      type: SchemaType.OBJECT,
       properties: {
-        protein: { type: "number", description: "Total protein in grams." },
-        carbs: { type: "number", description: "Total carbohydrates in grams." },
-        fat: { type: "number", description: "Total fat in grams." },
+        protein: { type: SchemaType.NUMBER, description: "Total protein in grams." },
+        carbs: { type: SchemaType.NUMBER, description: "Total carbohydrates in grams." },
+        fat: { type: SchemaType.NUMBER, description: "Total fat in grams." },
       },
       required: ["protein", "carbs", "fat"],
     },
     foodItems: {
-      type: "array",
+      type: SchemaType.ARRAY,
       items: {
-        type: "object",
+        type: SchemaType.OBJECT,
         properties: {
-          name: { type: "string", description: "Name of the food item." },
-          approxCalories: { type: "number", description: "Approximate calories for this item." },
-          protein: { type: "number", description: "Protein in grams for this item." },
-          carbs: { type: "number", description: "Carbohydrates in grams for this item." },
-          fat: { type: "number", description: "Fat in grams for this item." },
+          name: { type: SchemaType.STRING, description: "Name of the food item." },
+          approxCalories: { type: SchemaType.NUMBER, description: "Approximate calories for this item." },
+          protein: { type: SchemaType.NUMBER, description: "Protein in grams for this item." },
+          carbs: { type: SchemaType.NUMBER, description: "Carbohydrates in grams for this item." },
+          fat: { type: SchemaType.NUMBER, description: "Fat in grams for this item." },
         },
         required: ["name", "approxCalories", "protein", "carbs", "fat"],
       },
     },
     summary: {
-      type: "string",
+      type: SchemaType.STRING,
       description: "A short, friendly summary of the meal's nutritional value (1-2 sentences).",
     },
   },
@@ -51,20 +44,24 @@ const nutritionSchema = {
 };
 
 export const analyzeFoodImage = async (base64Image: string): Promise<NutritionAnalysis> => {
+  // Extract mime type if available, default to image/jpeg
   const mimeTypeMatch = base64Image.match(/^data:(image\/\w+);base64,/);
   const mimeType = mimeTypeMatch ? mimeTypeMatch[1] : "image/jpeg";
+
+  // Remove data URL prefix if present to get just the base64 string
   const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, "");
-
+  
   try {
-    const prompt = "Analyze this image of food. Identify the items and provide a nutritional breakdown including total calories and macros (protein, carbs, fat). Be realistic with portion sizes based on the image.";
-
-    const model = ai.getGenerativeModel({
+    // Using gemini-1.5-flash which is fully supported by the @google/generative-ai SDK
+    const model = genAI.getGenerativeModel({
       model: "gemini-1.5-flash",
       generationConfig: {
         responseMimeType: "application/json",
         responseSchema: nutritionSchema,
       },
     });
+
+    const prompt = "Analyze this image of food. Identify the items and provide a nutritional breakdown including total calories and macros (protein, carbs, fat). Be realistic with portion sizes based on the image.";
 
     const result = await model.generateContent([
       prompt,
@@ -76,7 +73,7 @@ export const analyzeFoodImage = async (base64Image: string): Promise<NutritionAn
       },
     ]);
 
-    const response = result.response;
+    const response = await result.response;
     const text = response.text();
 
     if (!text) {
