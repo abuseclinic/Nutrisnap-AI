@@ -1,39 +1,39 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { NutritionAnalysis } from "../types";
 
-// Define schema using Type from @google/genai
+// Define schema using SchemaType from @google/generative-ai
 const nutritionSchema = {
-  type: Type.OBJECT,
+  type: SchemaType.OBJECT,
   properties: {
     totalCalories: {
-      type: Type.NUMBER,
+      type: SchemaType.NUMBER,
       description: "The total estimated calories in the meal.",
     },
     macros: {
-      type: Type.OBJECT,
+      type: SchemaType.OBJECT,
       properties: {
-        protein: { type: Type.NUMBER, description: "Total protein in grams." },
-        carbs: { type: Type.NUMBER, description: "Total carbohydrates in grams." },
-        fat: { type: Type.NUMBER, description: "Total fat in grams." },
+        protein: { type: SchemaType.NUMBER, description: "Total protein in grams." },
+        carbs: { type: SchemaType.NUMBER, description: "Total carbohydrates in grams." },
+        fat: { type: SchemaType.NUMBER, description: "Total fat in grams." },
       },
       required: ["protein", "carbs", "fat"],
     },
     foodItems: {
-      type: Type.ARRAY,
+      type: SchemaType.ARRAY,
       items: {
-        type: Type.OBJECT,
+        type: SchemaType.OBJECT,
         properties: {
-          name: { type: Type.STRING, description: "Name of the food item." },
-          approxCalories: { type: Type.NUMBER, description: "Approximate calories for this item." },
-          protein: { type: Type.NUMBER, description: "Protein in grams for this item." },
-          carbs: { type: Type.NUMBER, description: "Carbohydrates in grams for this item." },
-          fat: { type: Type.NUMBER, description: "Fat in grams for this item." },
+          name: { type: SchemaType.STRING, description: "Name of the food item." },
+          approxCalories: { type: SchemaType.NUMBER, description: "Approximate calories for this item." },
+          protein: { type: SchemaType.NUMBER, description: "Protein in grams for this item." },
+          carbs: { type: SchemaType.NUMBER, description: "Carbohydrates in grams for this item." },
+          fat: { type: SchemaType.NUMBER, description: "Fat in grams for this item." },
         },
         required: ["name", "approxCalories", "protein", "carbs", "fat"],
       },
     },
     summary: {
-      type: Type.STRING,
+      type: SchemaType.STRING,
       description: "A short, friendly summary of the meal's nutritional value (1-2 sentences).",
     },
   },
@@ -42,7 +42,7 @@ const nutritionSchema = {
 
 export const analyzeFoodImage = async (base64Image: string): Promise<NutritionAnalysis> => {
   // Retrieve API Key from environment variables
-  // Ensure your build process (e.g. Vite) replaces process.env.API_KEY with the actual key
+  // Based on vite.config.ts, process.env.API_KEY is replaced during build with the actual env var
   const apiKey = process.env.API_KEY;
 
   if (!apiKey || apiKey === "undefined" || apiKey.includes("your_api_key_here")) {
@@ -50,8 +50,8 @@ export const analyzeFoodImage = async (base64Image: string): Promise<NutritionAn
     throw new Error("API Key is missing or invalid. Please check your Vercel environment variables.");
   }
 
-  // Initialize the API client with the key
-  const ai = new GoogleGenAI({ apiKey });
+  // Initialize the API client with the key using the older SDK class
+  const genAI = new GoogleGenerativeAI(apiKey);
 
   // Extract mime type if available, default to image/jpeg
   const mimeTypeMatch = base64Image.match(/^data:(image\/\w+);base64,/);
@@ -61,31 +61,30 @@ export const analyzeFoodImage = async (base64Image: string): Promise<NutritionAn
   const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, "");
   
   try {
-    const prompt = "Analyze this image of food. Identify the items and provide a nutritional breakdown including total calories and macros (protein, carbs, fat). Be realistic with portion sizes based on the image.";
-
-    // Using gemini-2.0-flash for high performance and multimodal capabilities
-    const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
-      contents: {
-        parts: [
-          {
-            inlineData: {
-              data: base64Data,
-              mimeType: mimeType,
-            },
-          },
-          {
-            text: prompt,
-          },
-        ]
-      },
-      config: {
+    // Get the model (using gemini-1.5-flash as a stable, widely available model)
+    const model = genAI.getGenerativeModel({
+      model: "gemini-1.5-flash",
+      generationConfig: {
         responseMimeType: "application/json",
         responseSchema: nutritionSchema,
       },
     });
 
-    const text = response.text;
+    const prompt = "Analyze this image of food. Identify the items and provide a nutritional breakdown including total calories and macros (protein, carbs, fat). Be realistic with portion sizes based on the image.";
+
+    // Generate content using the older SDK structure (array of parts)
+    const result = await model.generateContent([
+      prompt,
+      {
+        inlineData: {
+          data: base64Data,
+          mimeType: mimeType,
+        },
+      },
+    ]);
+
+    const response = await result.response;
+    const text = response.text();
 
     if (!text) {
       throw new Error("No response received from Gemini.");
